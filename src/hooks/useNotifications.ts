@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import { router } from 'expo-router';
 const API_BASE = 'https://rumah-keripik.vercel.app';
 
 Notifications.setNotificationHandler({
@@ -68,7 +69,14 @@ export function usePushNotifications() {
     register();
 
     notificationListener.current = Notifications.addNotificationReceivedListener(() => {});
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(() => {});
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((res) => {
+      const data = res.notification.request.content.data;
+      if (data?.kodePesanan) {
+        router.push(`/lacak?code=${data.kodePesanan}`);
+      } else if (data?.orderId) {
+        router.push('/saya');
+      }
+    });
 
     return () => {
       if (notificationListener.current) notificationListener.current.remove();
