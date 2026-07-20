@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { colors, borderRadius } from '../../src/theme';
 import { formatRupiah } from '../../src/lib/utils';
 import * as api from '../../src/lib/api-client';
@@ -156,9 +156,7 @@ export default function PesananSayaScreen() {
                     {order.statusToken && (
                       <TouchableOpacity
                         style={styles.trackBtn}
-                        onPress={() => {
-                          // Navigate to lacak with code
-                        }}
+                        onPress={() => router.push(`/lacak?code=${order.kodePesanan || ''}`)}
                       >
                         <Text style={styles.trackBtnText}>Lacak</Text>
                       </TouchableOpacity>

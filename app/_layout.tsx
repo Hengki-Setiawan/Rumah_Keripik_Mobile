@@ -1,26 +1,17 @@
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { usePushNotifications } from '../src/hooks/useNotifications';
 
-function NotificationRegistrar() {
-  const { token, registered } = usePushNotifications();
-
-  useEffect(() => {
-    if (registered && token) {
-      // Token siap dikirim ke server untuk push notification
-      // TODO: Send token to API when we have the endpoint
-    }
-  }, [registered, token]);
-
+function PushRegistrar() {
+  usePushNotifications();
   return null;
 }
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <NotificationRegistrar />
+      <PushRegistrar />
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />

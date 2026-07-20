@@ -59,15 +59,16 @@ export function useChat() {
 
   async function triggerAutoGreeting(
     sessionId: string,
-    _ctx: CustomerContextDto | null,
+    ctx: CustomerContextDto | null,
     currentCart: ChatCartDto | null,
   ) {
     if (autoStarted.current) return;
     autoStarted.current = true;
     try {
+      const isReturning = !!ctx?.customer;
       const data = await api.runAction(
         sessionId,
-        'auto_greet_new',
+        isReturning ? 'auto_greet_returning' : 'auto_greet_new',
         { hasCart: (currentCart?.itemCount ?? 0) > 0 },
       );
       setMessages(data.messages);
@@ -91,7 +92,7 @@ export function useChat() {
       setMessages(data.messages);
       setCart(data.cart);
       setStarted(data.messages.length > 0);
-      setStage(data.stage);
+      if (data.stage) setStage(data.stage);
       loadSessions();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Pesan gagal');
@@ -113,7 +114,7 @@ export function useChat() {
       setMessages(data.messages);
       setCart(data.cart);
       setStarted(data.messages.length > 0);
-      setStage(data.stage);
+      if (data.stage) setStage(data.stage);
       loadSessions();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Aksi gagal');
