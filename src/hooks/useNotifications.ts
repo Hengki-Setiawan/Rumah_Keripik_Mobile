@@ -3,14 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+const API_BASE = 'https://rumah-keripik.vercel.app';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
   }),
 });
 
@@ -19,6 +18,18 @@ export type PushTokenState = {
   registered: boolean;
   error: string | null;
 };
+
+async function registerTokenOnServer(token: string) {
+  try {
+    await fetch(`${API_BASE}/api/public/push-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, platform: Platform.OS }),
+    });
+  } catch {
+    // silent fail - server registration is optional
+  }
+}
 
 export function usePushNotifications() {
   const [state, setState] = useState<PushTokenState>({
@@ -40,6 +51,7 @@ export function usePushNotifications() {
 
         const tokenData = await Notifications.getExpoPushTokenAsync();
         setState({ token: tokenData.data, registered: true, error: null });
+        await registerTokenOnServer(tokenData.data);
       } catch {
         // silent fail
       }
