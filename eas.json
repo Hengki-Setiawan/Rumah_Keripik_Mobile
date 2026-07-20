@@ -6,9 +6,7 @@
     "preview": {
       "android": {
         "buildType": "apk"
-      },
-      "node": "22.23.1",
-      "installCommand": "npm install"
+      }
     },
     "production": {
       "android": {

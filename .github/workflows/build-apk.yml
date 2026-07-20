@@ -44,11 +44,8 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Init EAS project
-        run: eas init --force --non-interactive
-
       - name: Build APK
-        run: eas build -p android --profile preview --non-interactive --clear-cache
+        run: eas build -p android --profile preview --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
