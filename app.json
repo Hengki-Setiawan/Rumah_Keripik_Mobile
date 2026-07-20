@@ -7,12 +7,31 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "rumah-kripik",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF6EF"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hengkisetiawan.rumahkeripik"
     },
     "android": {
       "package": "com.hengkisetiawan.rumahkeripik",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "rumah-kripik",
+              "host": "*",
+              "pathPrefix": "/lacak"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#FAF6EF",
         "foregroundImage": "./assets/android-icon-foreground.png",
