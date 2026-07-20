@@ -2,19 +2,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BASE_URL = 'https://rumah-keripik.vercel.app';
 const COOKIE_KEY = 'rk_session_cookie';
+const MAX_RETRIES = 5;
+const RETRY_BASE_DELAY = 2000;
 
-type SSECallback = (event: string, data: unknown) => void;
+type SSECallbacks = {
+  onEvent: (event: string, data: unknown) => void;
+  onError?: (err: Error) => void;
+};
 
 export function connectSSE(
   path: string,
-  callbacks: SSECallback | { onEvent?: SSECallback; onError?: (err: Error) => void },
+  callbacks: SSECallbacks | ((event: string, data: unknown) => void),
 ): () => void {
   let aborted = false;
+  let retryCount = 0;
 
-  const onEvent = typeof callbacks === 'function' ? callbacks : callbacks.onEvent || (() => {});
+  const onEvent = typeof callbacks === 'function' ? callbacks : callbacks.onEvent;
   const onError = typeof callbacks === 'function' ? () => {} : callbacks.onError || (() => {});
 
-  async function start() {
+  async function connect() {
     if (aborted) return;
 
     const storedCookie = await AsyncStorage.getItem(COOKIE_KEY);
@@ -27,10 +33,10 @@ export function connectSSE(
       const res = await fetch(`${BASE_URL}${path}`, { headers });
 
       if (!res.ok || !res.body) {
-        onError(new Error(`SSE connection failed: ${res.status}`));
-        return;
+        throw new Error(`SSE connection failed: ${res.status}`);
       }
 
+      retryCount = 0;
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -63,11 +69,22 @@ export function connectSSE(
     } catch (err) {
       if (!aborted) {
         onError(err instanceof Error ? err : new Error('SSE error'));
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          const delay = RETRY_BASE_DELAY * Math.pow(2, retryCount - 1);
+          setTimeout(connect, delay);
+        }
       }
+      return;
+    }
+
+    if (!aborted && retryCount < MAX_RETRIES) {
+      retryCount++;
+      setTimeout(connect, RETRY_BASE_DELAY);
     }
   }
 
-  start();
+  connect();
 
   return () => { aborted = true; };
 }

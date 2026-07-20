@@ -29,6 +29,7 @@ async function saveCookieFromResponse(res: Response): Promise<void> {
 async function request<T>(
   path: string,
   options: RequestInit = {},
+  retries = 2,
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
   const storedCookie = await getStoredCookie();
@@ -40,19 +41,30 @@ async function request<T>(
     headers['Cookie'] = storedCookie;
   }
 
-  const res = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+      });
 
-  await saveCookieFromResponse(res);
+      await saveCookieFromResponse(res);
 
-  const data = await res.json();
-  if (!res.ok || !data.ok) {
-    throw new Error(data.error || `Request failed: ${res.status}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || `Request failed: ${res.status}`);
+      }
+      return data as T;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error('Request failed');
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
+    }
   }
-  return data as T;
+  throw lastError || new Error('Request failed');
 }
 
 export async function createSession(
@@ -171,7 +183,7 @@ export async function saveAddress(address: Partial<SavedAddressDto>) {
   });
 }
 
-export async function checkPaymentStatus(orderId: string): Promise<{ status: string; paymentStatus: string }> {
+export async function checkPaymentStatus(orderId: string): Promise<{ paymentStatus: string; orderStatus: string; isPaid: boolean }> {
   return request(`/api/public/payment-status?orderId=${encodeURIComponent(orderId)}`);
 }
 

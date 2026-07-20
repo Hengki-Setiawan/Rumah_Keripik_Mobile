@@ -22,14 +22,14 @@ export function PaymentUploadCard({
     const startDelay = setTimeout(() => {
       setPolling(true);
       api.checkPaymentStatus(component.orderId).then((data) => {
-        if (data.status === 'settlement' || data.status === 'capture' || data.paymentStatus === 'verified' || data.paymentStatus === 'paid') {
+        if (data.isPaid || data.paymentStatus === 'verified') {
           setVerified(true);
         }
       }).catch(() => {});
 
       pollingRef.current = setInterval(() => {
         api.checkPaymentStatus(component.orderId).then((data) => {
-          if (data.status === 'settlement' || data.status === 'capture' || data.paymentStatus === 'verified' || data.paymentStatus === 'paid') {
+          if (data.isPaid || data.paymentStatus === 'verified') {
             setVerified(true);
             if (pollingRef.current) clearInterval(pollingRef.current);
           }

@@ -36,18 +36,21 @@ export type CartSummaryComponent = { type: 'cart_summary'; cartId: string };
 export type CustomerConfirmComponent = {
   type: 'customer_confirm';
   customerId?: string;
+  maskedFields?: true;
   customer?: MaskedCustomerSummary;
+  actions?: string[];
 };
 
 export type AddressConfirmComponent = {
   type: 'address_confirm';
   addressId?: number;
   address?: AddressSummary;
+  actions?: string[];
 };
 
 export type LocationPickerComponent = {
   type: 'location_picker';
-  mode?: 'current_location' | 'manual_pick' | 'both';
+  mode: 'current_location' | 'manual_pick' | 'both';
   addressDraftId?: string;
 };
 
@@ -60,6 +63,9 @@ export type PaymentMethodsComponent = {
 export type PaymentUploadComponent = {
   type: 'payment_upload';
   orderId: string;
+  statusToken?: string;
+  allowedTypes?: Array<'image/jpeg' | 'image/png' | 'application/pdf'>;
+  maxSizeMb?: number;
   qrCodeUrl?: string | null;
   amount?: number;
 };
@@ -67,6 +73,10 @@ export type PaymentUploadComponent = {
 export type OrderSummaryComponent = {
   type: 'order_summary';
   orderDraftId: string;
+  paymentMethodId?: string;
+  savedCustomerId?: string;
+  savedAddressId?: number;
+  actions?: Array<'confirm_order' | 'edit_cart' | 'edit_address'>;
 };
 
 export type OrderStatusComponent = {
@@ -75,6 +85,7 @@ export type OrderStatusComponent = {
   orderCode?: string | null;
   status?: string;
   paymentStatus?: string;
+  deliveryStatus?: string;
   totalAmount?: number;
 };
 
@@ -116,6 +127,7 @@ export type MaskedCustomerSummary = {
   id: string;
   name: string | null;
   phoneMasked: string | null;
+  tags?: string[];
 };
 
 export type AddressSummary = {
@@ -129,10 +141,28 @@ export type AddressSummary = {
   isDefault?: boolean;
 };
 
+export type CustomerMemorySummary = {
+  id: string;
+  key: string;
+  value: string;
+  confidence: number;
+  source: 'chat' | 'order' | 'admin' | 'system';
+  visibility: 'ai' | 'admin' | 'both';
+  reviewedByAdmin: boolean;
+};
+
 export type CustomerContextDto = {
   customer: MaskedCustomerSummary | null;
   addresses: AddressSummary[];
   defaultAddress: AddressSummary | null;
+  memory?: CustomerMemorySummary[];
+  lastOrder?: {
+    id: string;
+    code: string | null;
+    status: string;
+    paymentStatus: string;
+    totalAmount: number;
+  } | null;
 };
 
 export type ChatSessionSummary = {
