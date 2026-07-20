@@ -6,6 +6,7 @@ export type ChatComponent =
   | CartSummaryComponent
   | CustomerConfirmComponent
   | AddressConfirmComponent
+  | LocationPickerComponent
   | PaymentMethodsComponent
   | PaymentUploadComponent
   | OrderSummaryComponent
@@ -42,6 +43,12 @@ export type AddressConfirmComponent = {
   type: 'address_confirm';
   addressId?: number;
   address?: AddressSummary;
+};
+
+export type LocationPickerComponent = {
+  type: 'location_picker';
+  mode?: 'current_location' | 'manual_pick' | 'both';
+  addressDraftId?: string;
 };
 
 export type PaymentMethodsComponent = {
@@ -133,6 +140,92 @@ export type ChatSessionSummary = {
   title: string | null;
   status: string;
   updatedAt: string;
+};
+
+export type ProductDto = {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  imageUrl: string | null;
+  description: string | null;
+  categoryName?: string | null;
+  variants: Array<{ id: string; name: string; price: number; stock: number; imageUrl?: string | null }>;
+};
+
+export type PaymentMethodDto = {
+  id: string;
+  type: string;
+  label: string;
+  note?: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
+};
+
+export type CustomerProfileDto = {
+  id: string;
+  nama: string | null;
+  phone: string | null;
+  email: string | null;
+};
+
+export type SavedAddressDto = {
+  id: number;
+  label: string | null;
+  recipientName: string | null;
+  phone: string | null;
+  addressText: string;
+  landmark: string | null;
+  courierNote: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  isDefault: number;
+};
+
+export type OrderDto = {
+  idTransaksi: string;
+  kodePesanan: string | null;
+  totalBayar: number;
+  statusPembayaran: string;
+  paymentStatus: string;
+  orderStatus: string;
+  paymentMethod: string | null;
+  namaPenerima: string | null;
+  phonePenerima: string | null;
+  alamatPenerima: string | null;
+  waktuSimpan: string;
+  updatedAt: string;
+  statusToken: string | null;
+};
+
+export type OrderTrackResponse = {
+  order: {
+    id_transaksi: string;
+    kode_pesanan: string | null;
+    total_bayar: number;
+    status_pembayaran: string;
+    order_status: string;
+    payment_status: string;
+    payment_method: string | null;
+    nama_penerima: string | null;
+    alamat_penerima: string | null;
+    waktu_simpan: string;
+    status_token: string | null;
+  };
+  customer?: { nama: string | null; phone: string | null } | null;
+  items: Array<{
+    id_produk: string;
+    nama_produk: string | null;
+    qty: number;
+    harga: number;
+    subtotal: number;
+  }>;
+  events: Array<{
+    id: string;
+    event_type: string;
+    event_data: string | null;
+    created_at: string;
+  }>;
 };
 
 export type ApiResponse<T = unknown> = {

@@ -25,15 +25,19 @@ export function ChatComposer({
     Keyboard.dismiss();
   }
 
+  function handleKeyPress({ nativeEvent }: { nativeEvent: { key: string } }) {
+    if (nativeEvent.key === 'Enter') {
+      handleSend();
+    }
+  }
+
   if (idle) return null;
 
   if (stage === 'completed' || stage === 'cancelled') {
     return (
       <View style={styles.endedContainer}>
         <Text style={styles.endedText}>
-          {stage === 'completed'
-            ? 'Pesanan selesai diproses!'
-            : 'Pesanan dibatalkan'}
+          {stage === 'completed' ? 'Pesanan selesai! 😊' : 'Pesanan dibatalkan'}
         </Text>
         {onNewOrder && (
           <TouchableOpacity style={styles.newBtn} onPress={onNewOrder}>
@@ -51,11 +55,13 @@ export function ChatComposer({
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder="Ketik pesan..."
+          onKeyPress={handleKeyPress}
+          placeholder="Tanya stok, harga, atau tulis pesananmu..."
           placeholderTextColor={colors.textMuted}
           multiline
           maxLength={1000}
           editable={!disabled}
+          blurOnSubmit
         />
         <TouchableOpacity
           style={[styles.sendBtn, (!text.trim() || disabled) && styles.sendBtnDisabled]}
@@ -71,11 +77,11 @@ export function ChatComposer({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: borderRadius.xl,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.white,
-    padding: 4,
+    backgroundColor: 'rgba(255,250,244,0.92)',
+    padding: 6,
   },
   inputRow: {
     flexDirection: 'row',
@@ -86,14 +92,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
     color: colors.text,
     maxHeight: 120,
   },
   sendBtn: {
     backgroundColor: colors.accent,
-    borderRadius: borderRadius.full,
+    borderRadius: 999,
     paddingHorizontal: 18,
     paddingVertical: 10,
     marginBottom: 2,
@@ -119,7 +125,7 @@ const styles = StyleSheet.create({
   },
   newBtn: {
     backgroundColor: colors.green,
-    borderRadius: borderRadius.full,
+    borderRadius: 999,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
