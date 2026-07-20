@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import * as Location from 'expo-location';
 import { colors, borderRadius } from '../../../theme';
 import type { LocationPickerComponent } from '../../../lib/types';
 
 export function LocationPickerCard({
-  component,
+  component: _component,
   onSend,
 }: {
   component: LocationPickerComponent;
@@ -14,8 +15,41 @@ export function LocationPickerCard({
 
   async function useCurrentLocation() {
     setLoading(true);
-    onSend('Gunakan lokasi saya saat ini');
-    setLoading(false);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Akses Lokasi Diperlukan',
+          'Izinkan Rumah Keripik mengakses lokasi untuk mengisi alamat otomatis. Buka Settings > Rumah Keripik > Location.',
+        );
+        setLoading(false);
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const { latitude, longitude } = loc.coords;
+      const address = await Location.reverseGeocodeAsync({ latitude, longitude });
+
+      let addressText = '';
+      if (address.length > 0) {
+        const a = address[0];
+        const parts = [
+          a.streetNumber, a.street, a.district,
+          a.city, a.region, a.postalCode,
+        ].filter(Boolean);
+        addressText = parts.join(', ');
+      }
+
+      const message = `Lokasi saya: ${addressText || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`}`;
+      onSend(message);
+    } catch (err) {
+      Alert.alert('Gagal', 'Gagal mendapatkan lokasi. Coba input manual.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -28,8 +62,10 @@ export function LocationPickerCard({
           disabled={loading}
         >
           <Text style={styles.optionIcon}>📍</Text>
-          <Text style={styles.optionLabel}>Pakai lokasi saya</Text>
-          <Text style={styles.optionDesc}>GPS otomatis</Text>
+          <Text style={styles.optionLabel}>
+            {loading ? 'Mendeteksi...' : 'Pakai GPS'}
+          </Text>
+          <Text style={styles.optionDesc}>Deteksi lokasi otomatis</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.option}
