@@ -6,6 +6,7 @@ import type {
   CustomerContextDto,
 } from '../lib/types';
 import * as api from '../lib/api-client';
+import { connectSSE } from '../lib/sse-client';
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessageDto[]>([]);
@@ -18,6 +19,7 @@ export function useChat() {
   const [started, setStarted] = useState(false);
   const [stage, setStage] = useState('idle');
   const autoStarted = useRef(false);
+  const disconnectSSE = useRef<(() => void) | null>(null);
 
   const loadSessions = useCallback(async () => {
     try {
@@ -171,6 +173,36 @@ export function useChat() {
   useEffect(() => {
     bootstrap(false);
   }, []);
+
+  useEffect(() => {
+    if (disconnectSSE.current) {
+      disconnectSSE.current();
+      disconnectSSE.current = null;
+    }
+
+    if (chatSessionId) {
+      disconnectSSE.current = connectSSE(
+        `/api/chat/stream?chatSessionId=${chatSessionId}`,
+        {
+          onEvent(event, data) {
+            if (event === 'chat_state' && typeof data === 'object' && data && 'messages' in data) {
+              const d = data as { messages: ChatMessageDto[]; cart: ChatCartDto | null };
+              setMessages(d.messages);
+              if (d.cart) setCart(d.cart);
+            }
+          },
+          onError() {},
+        },
+      );
+    }
+
+    return () => {
+      if (disconnectSSE.current) {
+        disconnectSSE.current();
+        disconnectSSE.current = null;
+      }
+    };
+  }, [chatSessionId]);
 
   const isIdle = !started && messages.length === 0 && !loading && !sending;
 
