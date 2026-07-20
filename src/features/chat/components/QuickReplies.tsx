@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, borderRadius } from '../../theme';
+import { colors, borderRadius } from '../../../theme';
 
 export function QuickReplies({
   options,

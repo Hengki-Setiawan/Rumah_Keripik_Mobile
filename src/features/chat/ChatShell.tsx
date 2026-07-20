@@ -29,6 +29,9 @@ export function ChatShell() {
               loading={chat.loading || chat.sending}
               idle={chat.isIdle}
               stage={chat.stage}
+              onSend={chat.sendMessage}
+              onAction={chat.runAction}
+              onNewOrder={chat.startNewOrder}
             />
             {!chat.isIdle && (
               <View style={styles.composerWrapper}>
