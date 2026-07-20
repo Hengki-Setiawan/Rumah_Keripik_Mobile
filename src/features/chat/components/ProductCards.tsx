@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { colors, borderRadius } from '../../../theme';
 import { formatRupiah } from '../../../lib/utils';
 import * as api from '../../../lib/api-client';
@@ -55,9 +56,12 @@ export function ProductCards({
         return (
           <View key={product.id} style={styles.productCard}>
             <Image
-              source={{ uri: imageUrl || undefined }}
+              source={imageUrl || null}
               style={styles.productImage}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              placeholder={require('../../../../assets/icon.png')}
+              transition={200}
             />
             <View style={styles.productInfo}>
               <View style={styles.productHeader}>
