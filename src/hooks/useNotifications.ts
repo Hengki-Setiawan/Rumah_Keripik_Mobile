@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 const API_BASE = 'https://rumah-keripik.vercel.app';
+const COOKIE_KEY = 'rk_session_cookie';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -22,10 +24,12 @@ export type PushTokenState = {
 
 async function registerTokenOnServer(token: string) {
   try {
+    const storedCookie = await AsyncStorage.getItem(COOKIE_KEY);
+    const orderSessionId = storedCookie ? storedCookie.split('=')[1] || '' : '';
     await fetch(`${API_BASE}/api/public/push-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, platform: Platform.OS }),
+      body: JSON.stringify({ token, platform: Platform.OS, orderSessionId }),
     });
   } catch {
     // silent fail - server registration is optional

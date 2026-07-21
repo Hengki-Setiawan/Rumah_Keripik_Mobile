@@ -22,7 +22,8 @@ async function getStoredCookie(): Promise<string | null> {
 async function saveCookieFromResponse(res: Response): Promise<void> {
   const setCookie = res.headers.get('set-cookie');
   if (setCookie) {
-    await AsyncStorage.setItem(COOKIE_KEY, setCookie);
+    const cookieValue = setCookie.split(';')[0];
+    await AsyncStorage.setItem(COOKIE_KEY, cookieValue);
   }
 }
 
@@ -161,7 +162,7 @@ export async function getProfile(): Promise<{
 
 export async function saveProfile(profile: { nama: string; phone: string; email: string }) {
   return request('/api/public/me', {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(profile),
   });
 }
