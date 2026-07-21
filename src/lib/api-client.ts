@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import type {
   ApiResponse,
   ChatCartDto,
@@ -16,14 +16,14 @@ const BASE_URL = 'https://rumah-keripik.vercel.app';
 const COOKIE_KEY = 'rk_session_cookie';
 
 async function getStoredCookie(): Promise<string | null> {
-  return AsyncStorage.getItem(COOKIE_KEY);
+  return SecureStore.getItemAsync(COOKIE_KEY);
 }
 
 async function saveCookieFromResponse(res: Response): Promise<void> {
   const setCookie = res.headers.get('set-cookie');
   if (setCookie) {
     const cookieValue = setCookie.split(';')[0];
-    await AsyncStorage.setItem(COOKIE_KEY, cookieValue);
+    await SecureStore.setItemAsync(COOKIE_KEY, cookieValue);
   }
 }
 
@@ -196,5 +196,5 @@ export async function trackOrder(code: string, phone?: string, token?: string) {
 }
 
 export async function clearSessionCookie(): Promise<void> {
-  await AsyncStorage.removeItem(COOKIE_KEY);
+  await SecureStore.deleteItemAsync(COOKIE_KEY);
 }

@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { usePushNotifications } from '../src/hooks/useNotifications';
+import { OfflineBanner } from '../src/components/OfflineBanner';
 
 function PushRegistrar() {
   usePushNotifications();
@@ -11,6 +12,7 @@ function PushRegistrar() {
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      <OfflineBanner />
       <PushRegistrar />
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>

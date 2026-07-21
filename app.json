@@ -18,6 +18,8 @@
     },
     "android": {
       "package": "com.hengkisetiawan.rumahkeripik",
+      "versionCode": 1,
+      "versionName": "1.0.0",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -52,12 +54,7 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Izinkan Rumah Keripik mengakses kamera untuk scan QRIS dan foto bukti bayar."
-        }
-      ],
+      "expo-secure-store",
       [
         "expo-location",
         {
