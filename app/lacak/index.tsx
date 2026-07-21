@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator,
+  StyleSheet, ActivityIndicator, Linking, Platform,
 } from 'react-native';
 import { colors, borderRadius } from '../../src/theme';
 import { formatRupiah } from '../../src/lib/utils';
@@ -131,6 +131,43 @@ export default function LacakScreen() {
                   <Text style={styles.itemSubtotal}>{formatRupiah(item.subtotal)}</Text>
                 </View>
               ))}
+            </View>
+          )}
+
+          {result.courier && result.delivery_status && (
+            <View style={[styles.resultCard, styles.courierCard]}>
+              <Text style={styles.sectionTitle}>🚚 Kurir</Text>
+              <View style={styles.courierInfo}>
+                <Text style={styles.courierName}>{result.courier.name}</Text>
+                {result.courier.vehicle && (
+                  <Text style={styles.courierDetail}>
+                    {result.courier.vehicle}{result.courier.plat_no ? ` (${result.courier.plat_no})` : ''}
+                  </Text>
+                )}
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusText}>
+                    {result.delivery_status === 'Siap_Dikirim' ? '🔴 Siap Dikirim' :
+                     result.delivery_status === 'Dalam_Pengiriman' ? '🟡 Dalam Perjalanan' :
+                     result.delivery_status === 'Terkirim' ? '✅ Terkirim' :
+                     result.delivery_status === 'Gagal' ? '❌ Gagal' : result.delivery_status}
+                  </Text>
+                </View>
+              </View>
+              {result.courier.lat && result.courier.lng && (
+                <TouchableOpacity
+                  style={styles.mapBtn}
+                  onPress={() => {
+                    const url = Platform.select({
+                      ios: `maps:0,0?q=${result.courier!.lat},${result.courier!.lng}`,
+                      android: `geo:0,0?q=${result.courier!.lat},${result.courier!.lng}(Kurir)`,
+                      default: `https://www.google.com/maps?q=${result.courier!.lat},${result.courier!.lng}`,
+                    });
+                    Linking.openURL(url!);
+                  }}
+                >
+                  <Text style={styles.mapBtnText}>📍 Lihat Lokasi Kurir</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -327,5 +364,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  courierCard: {
+    borderColor: colors.accent,
+    borderWidth: 2,
+  },
+  courierInfo: {
+    gap: 4,
+  },
+  courierName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  courierDetail: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  mapBtn: {
+    marginTop: 12,
+    borderRadius: 999,
+    backgroundColor: colors.accent,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  mapBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.white,
   },
 });

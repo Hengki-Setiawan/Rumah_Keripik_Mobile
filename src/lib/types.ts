@@ -256,6 +256,15 @@ export type OrderTrackResponse = {
     event_data: string | null;
     created_at: string;
   }>;
+  courier?: {
+    name: string;
+    vehicle: string | null;
+    plat_no: string | null;
+    lat: number | null;
+    lng: number | null;
+    last_location_at: string | null;
+  } | null;
+  delivery_status?: string | null;
 };
 
 export type ApiResponse<T = unknown> = {
