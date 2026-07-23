@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 const BASE_URL = 'https://rumah-keripik.vercel.app';
 const COOKIE_KEY = 'rk_session_cookie';
@@ -23,7 +23,7 @@ export function connectSSE(
   async function connect() {
     if (aborted) return;
 
-    const storedCookie = await AsyncStorage.getItem(COOKIE_KEY);
+    const storedCookie = await SecureStore.getItemAsync(COOKIE_KEY);
     const headers: Record<string, string> = {};
     if (storedCookie) {
       headers['Cookie'] = storedCookie;
