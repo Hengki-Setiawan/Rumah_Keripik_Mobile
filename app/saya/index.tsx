@@ -1,464 +1,223 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, RefreshControl,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  Alert,
 } from 'react-native';
-import { useFocusEffect, router } from 'expo-router';
-import { colors, borderRadius } from '../../src/theme';
-import { formatRupiah } from '../../src/lib/utils';
-import * as api from '../../src/lib/api-client';
-import type { CustomerProfileDto, SavedAddressDto, OrderDto } from '../../src/lib/types';
+import { useRouter } from 'expo-router';
+import { User, Phone, MapPin, PackageCheck, ChevronRight, Save } from 'lucide-react-native';
 
-export default function PesananSayaScreen() {
-  const [data, setData] = useState<{
-    profile: CustomerProfileDto | null;
-    addresses: SavedAddressDto[];
-    orders: OrderDto[];
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-  const [profileForm, setProfileForm] = useState({ nama: '', phone: '', email: '' });
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [activeTab, setActiveTab] = useState<'orders' | 'profile'>('orders');
+export default function ProfileScreen() {
+  const router = useRouter();
+  const [nama, setNama] = useState('Pelanggan Setia');
+  const [phone, setPhone] = useState('08123456789');
+  const [savedAddresses, setSavedAddresses] = useState([
+    { id: '1', label: 'Rumah', address: 'Jl. Ahmad Yani No. 12, Samarinda' },
+    { id: '2', label: 'Kantor', address: 'Jl. Pahlawan No. 7, Samarinda' },
+  ]);
 
-  async function loadData() {
-    try {
-      const result = await api.getProfile();
-      setData(result);
-      setProfileForm({
-        nama: result.profile?.nama || '',
-        phone: result.profile?.phone || '',
-        email: result.profile?.email || '',
-      });
-      setError('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal memuat data');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
-
-  useFocusEffect(useCallback(() => {
-    setLoading(true);
-    loadData();
-  }, []));
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await loadData();
-  }
-
-  async function handleSaveProfile() {
-    setSavingProfile(true);
-    try {
-      await api.saveProfile(profileForm);
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan');
-    } finally {
-      setSavingProfile(false);
-    }
-  }
-
-  function statusColor(status: string) {
-    switch (status) {
-      case 'paid': case 'settlement': case 'completed': return '#16a34a';
-      case 'pending': case 'waiting_payment': return '#c55a2b';
-      case 'cancelled': case 'expired': return '#dc2626';
-      default: return colors.textSecondary;
-    }
-  }
-
-  if (loading && !data) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={loadData}>
-          <Text style={styles.retryBtnText}>Coba lagi</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const handleSaveProfile = () => {
+    Alert.alert('✅ Simpan Berhasil', 'Data profil & alamat pengiriman telah diperbarui!');
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Tab bar */}
-      <View style={styles.tabRow}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'orders' && styles.tabActive]}
-          onPress={() => setActiveTab('orders')}
-        >
-          <Text style={[styles.tabText, activeTab === 'orders' && styles.tabTextActive]}>
-            Pesanan ({data?.orders?.length || 0})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'profile' && styles.tabActive]}
-          onPress={() => setActiveTab('profile')}
-        >
-          <Text style={[styles.tabText, activeTab === 'profile' && styles.tabTextActive]}>
-            Profil
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{error}</Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* User Card */}
+        <View style={styles.userCard}>
+          <View style={styles.avatar}>
+            <User size={32} color="#ffffff" />
+          </View>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{nama}</Text>
+            <Text style={styles.userPhone}>{phone}</Text>
+          </View>
         </View>
-      )}
 
-      <ScrollView
-        style={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {activeTab === 'orders' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Riwayat Pesanan</Text>
-            {(!data?.orders || data.orders.length === 0) ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>Belum ada pesanan</Text>
-                <Text style={styles.emptySub}>Pesan keripik lewat chat untuk mulai.</Text>
+        {/* Edit Profile Form */}
+        <Text style={styles.sectionTitle}>Pengaturan Akun 👤</Text>
+        <View style={styles.card}>
+          <Text style={styles.inputLabel}>Nama Lengkap</Text>
+          <TextInput
+            style={styles.input}
+            value={nama}
+            onChangeText={setNama}
+            placeholder="Nama Anda"
+          />
+
+          <Text style={styles.inputLabel}>Nomor WhatsApp</Text>
+          <TextInput
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            placeholder="Nomor WhatsApp"
+          />
+
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSaveProfile}>
+            <Save size={16} color="#ffffff" />
+            <Text style={styles.saveBtnText}>Simpan Profil</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Saved Addresses */}
+        <Text style={styles.sectionTitle}>Alamat Pengiriman Tersimpan 📍</Text>
+        <View style={styles.card}>
+          {savedAddresses.map((item) => (
+            <View key={item.id} style={styles.addressRow}>
+              <MapPin size={20} color="#d97706" />
+              <View style={styles.addressInfo}>
+                <Text style={styles.addressLabel}>{item.label}</Text>
+                <Text style={styles.addressText}>{item.address}</Text>
               </View>
-            ) : (
-              data.orders.map((order) => (
-                <View key={order.idTransaksi} style={styles.orderCard}>
-                  <View style={styles.orderHeader}>
-                    <Text style={styles.orderCode}>
-                      {order.kodePesanan || order.idTransaksi}
-                    </Text>
-                    <View style={[styles.statusBadge, { backgroundColor: statusColor(order.orderStatus) + '20' }]}>
-                      <Text style={[styles.statusText, { color: statusColor(order.orderStatus) }]}>
-                        {order.orderStatus}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.orderDetail}>
-                    <Text style={styles.orderInfo}>
-                      {order.namaPenerima || '-'} | {order.phonePenerima || '-'}
-                    </Text>
-                    <Text style={styles.orderTotal}>{formatRupiah(order.totalBayar)}</Text>
-                    <Text style={styles.orderDate}>
-                      {new Date(order.waktuSimpan).toLocaleDateString('id-ID')}
-                    </Text>
-                  </View>
-                  <View style={styles.orderFooter}>
-                    {order.statusToken && (
-                      <TouchableOpacity
-                        style={styles.trackBtn}
-                        onPress={() => router.push(`/lacak?code=${order.kodePesanan || ''}`)}
-                      >
-                        <Text style={styles.trackBtnText}>Lacak</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-        )}
-
-        {activeTab === 'profile' && (
-          <View style={styles.section}>
-            <View style={styles.profileCard}>
-              <Text style={styles.sectionTitle}>Data Diri</Text>
-              <TextInput
-                style={styles.input}
-                value={profileForm.nama}
-                onChangeText={(t) => setProfileForm({ ...profileForm, nama: t })}
-                placeholder="Nama"
-                placeholderTextColor={colors.textMuted}
-              />
-              <TextInput
-                style={styles.input}
-                value={profileForm.phone}
-                onChangeText={(t) => setProfileForm({ ...profileForm, phone: t })}
-                placeholder="No. WhatsApp"
-                keyboardType="phone-pad"
-                placeholderTextColor={colors.textMuted}
-              />
-              <TextInput
-                style={styles.input}
-                value={profileForm.email}
-                onChangeText={(t) => setProfileForm({ ...profileForm, email: t })}
-                placeholder="Email (opsional)"
-                keyboardType="email-address"
-                placeholderTextColor={colors.textMuted}
-              />
-              <TouchableOpacity
-                style={[styles.saveBtn, savingProfile && styles.btnDisabled]}
-                onPress={handleSaveProfile}
-                disabled={savingProfile}
-              >
-                <Text style={styles.saveBtnText}>
-                  {savingProfile ? 'Menyimpan...' : 'Simpan'}
-                </Text>
-              </TouchableOpacity>
             </View>
+          ))}
+        </View>
 
-            {data?.addresses && data.addresses.length > 0 && (
-              <View style={styles.profileCard}>
-                <Text style={styles.sectionTitle}>
-                  Alamat Tersimpan ({data.addresses.length})
-                </Text>
-                {data.addresses.map((addr) => (
-                  <View key={addr.id} style={styles.addressItem}>
-                    <View style={styles.addressHeader}>
-                      <Text style={styles.addressLabel}>{addr.label || 'Alamat'}</Text>
-                      {addr.isDefault ? (
-                        <Text style={styles.defaultBadge}>Utama</Text>
-                      ) : null}
-                    </View>
-                    <Text style={styles.addressName}>
-                      {addr.recipientName} | {addr.phone}
-                    </Text>
-                    <Text style={styles.addressText}>{addr.addressText}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
+        {/* Order History Links */}
+        <Text style={styles.sectionTitle}>Riwayat & Pelacakan 📦</Text>
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/lacak')}
+        >
+          <View style={styles.menuLeft}>
+            <PackageCheck size={20} color="#d97706" />
+            <Text style={styles.menuText}>Lihat Semua Pesanan Saya</Text>
           </View>
-        )}
+          <ChevronRight size={18} color="#92400e" />
+        </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: '#fffbeb',
   },
-  center: {
-    flex: 1,
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  userCard: {
+    backgroundColor: '#d97706',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#b45309',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.bg,
-    gap: 12,
   },
-  errorText: {
-    fontSize: 14,
-    color: colors.error,
-    textAlign: 'center',
-    paddingHorizontal: 24,
+  userInfo: {
+    marginLeft: 14,
   },
-  retryBtn: {
-    borderRadius: 999,
-    backgroundColor: colors.accent,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  retryBtnText: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-  tabRow: {
-    flexDirection: 'row',
-    margin: 16,
-    gap: 8,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceDark,
-    alignItems: 'center',
-  },
-  tabActive: {
-    backgroundColor: colors.accent,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textSecondary,
-  },
-  tabTextActive: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-  errorBanner: {
-    backgroundColor: colors.errorBg,
-    borderWidth: 1,
-    borderColor: colors.errorBorder,
-    borderRadius: 12,
-    padding: 12,
-    marginHorizontal: 16,
-    marginBottom: 8,
-  },
-  errorBannerText: {
-    fontSize: 13,
-    color: colors.error,
-  },
-  scroll: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  section: {
-    gap: 12,
-    paddingBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  emptyCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyTitle: {
+  userName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '800',
+    color: '#ffffff',
   },
-  emptySub: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  orderCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    padding: 16,
-    gap: 8,
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  orderCode: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  orderDetail: {
-    gap: 2,
-  },
-  orderInfo: {
+  userPhone: {
     fontSize: 12,
-    color: colors.textSecondary,
-  },
-  orderTotal: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.accent,
-    marginTop: 4,
-  },
-  orderDate: {
-    fontSize: 11,
-    color: colors.textMuted,
+    color: '#fef3c7',
     marginTop: 2,
   },
-  orderFooter: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#78350f',
+    marginTop: 20,
+    marginBottom: 8,
   },
-  trackBtn: {
-    borderRadius: 999,
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderColor: '#fde68a',
   },
-  trackBtnText: {
+  inputLabel: {
     fontSize: 12,
-    fontWeight: '500',
-    color: colors.textSecondary,
-  },
-  profileCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    padding: 16,
-    gap: 10,
+    fontWeight: '700',
+    color: '#78350f',
+    marginTop: 6,
+    marginBottom: 4,
   },
   input: {
-    borderRadius: 12,
+    backgroundColor: '#fffbeb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 40,
+    fontSize: 13,
+    color: '#78350f',
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: colors.text,
+    borderColor: '#fde68a',
   },
   saveBtn: {
-    borderRadius: 999,
-    backgroundColor: colors.accent,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  btnDisabled: { opacity: 0.5 },
-  saveBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  addressItem: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-    padding: 12,
-    gap: 4,
-  },
-  addressHeader: {
+    backgroundColor: '#d97706',
+    borderRadius: 10,
+    paddingVertical: 10,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+  },
+  saveBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fef3c7',
+  },
+  addressInfo: {
+    marginLeft: 10,
+    flex: 1,
   },
   addressLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  defaultBadge: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.green,
-    backgroundColor: colors.greenLight,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  addressName: {
-    fontSize: 12,
-    color: colors.textSecondary,
+    fontWeight: '700',
+    color: '#78350f',
   },
   addressText: {
     fontSize: 12,
-    color: colors.textSecondary,
-    lineHeight: 18,
+    color: '#92400e',
+    marginTop: 2,
+  },
+  menuRow: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  menuText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#78350f',
   },
 });

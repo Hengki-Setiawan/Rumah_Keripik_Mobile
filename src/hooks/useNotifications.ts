@@ -12,6 +12,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -41,8 +43,8 @@ export function usePushNotifications() {
     registered: false,
     error: null,
   });
-  const notificationListener = useRef<{ remove: () => void }>();
-  const responseListener = useRef<{ remove: () => void }>();
+  const notificationListener = useRef<{ remove: () => void } | null>(null);
+  const responseListener = useRef<{ remove: () => void } | null>(null);
 
   useEffect(() => {
     async function register() {
