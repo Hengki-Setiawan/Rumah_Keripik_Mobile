@@ -121,9 +121,7 @@ export default function RiwayatScreen() {
                 <Text style={styles.paymentMethod}>{item.paymentMethod}</Text>
               )}
               <TouchableOpacity style={styles.reorderBtn} onPress={() => {
-                Alert.alert('Pesan Lagi', 'Buka halaman utama dan mulai chat untuk pesan ulang', [
-                  { text: 'OK', onPress: () => router.push('/') }
-                ]);
+                router.push('/');
               }}>
                 <Text style={styles.reorderBtnText}>Pesan Lagi</Text>
               </TouchableOpacity>

@@ -61,7 +61,7 @@ export default function AlamatScreen() {
   }
 
   async function handleAdd() {
-    router.push('/(auth)/login');
+    router.push('/saya/alamat-form');
   }
 
   const iconMap: Record<string, React.ReactNode> = {
@@ -95,6 +95,9 @@ export default function AlamatScreen() {
                   )}
                 </View>
                 <View style={styles.actions}>
+                  <TouchableOpacity onPress={() => router.push(`/saya/alamat-form?editId=${item.id}`)}>
+                    <Pencil size={16} color="#666" />
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleDelete(item.id)}>
                     <Trash2 size={16} color="#dc2626" />
                   </TouchableOpacity>

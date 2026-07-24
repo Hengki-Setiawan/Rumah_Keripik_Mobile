@@ -56,6 +56,15 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="saya/alamat-form"
+            options={{
+              headerShown: true,
+              title: 'Tambah Alamat',
+              headerStyle: { backgroundColor: '#fffbeb' },
+              headerTintColor: '#92400e',
+            }}
+          />
+          <Stack.Screen
             name="saya/riwayat"
             options={{
               headerShown: true,

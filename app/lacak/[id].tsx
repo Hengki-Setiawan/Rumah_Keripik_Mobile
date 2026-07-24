@@ -18,6 +18,7 @@ const id = params.id as string;
   const router = useRouter();
   const [tracking, setTracking] = useState<OrderTrackResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
   const [sseEvents, setSseEvents] = useState<Array<{ event_type: string; event_data: string | null; created_at: string }>>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -36,26 +37,7 @@ const id = params.id as string;
       setSseEvents(data.events || []);
     } catch {
       if (!tracking) {
-        setTracking({
-          order: {
-            id_transaksi: id || 'TX-MBL-123456',
-            kode_pesanan: id || null,
-            total_bayar: 35000,
-            payment_status: 'settlement',
-            order_status: 'delivering',
-            status_pembayaran: 'Lunas',
-            payment_method: 'Transfer Bank',
-            nama_penerima: 'Pelanggan Setia',
-            alamat_penerima: 'Jl. Ahmad Yani No. 12, Samarinda',
-            waktu_simpan: new Date().toISOString(),
-            status_token: null,
-          },
-          items: [],
-          events: [],
-          courier: { name: 'Budi', vehicle: 'Honda Vario', plat_no: 'KT 1234 AB', lat: null, lng: null, last_location_at: null },
-          delivery_status: 'Dalam_Pengiriman',
-          customer: null,
-        });
+        setError('Gagal memuat data pesanan. Periksa koneksi Anda.');
       }
     } finally {
       setLoading(false);
@@ -88,6 +70,18 @@ const id = params.id as string;
       <SafeAreaView style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#d97706" />
         <Text style={styles.loadingText}>Memuat status pesanan...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.centerContainer}>
+        <Text style={{ color: '#dc2626', fontSize: 15, fontWeight: '600', textAlign: 'center', marginBottom: 12, paddingHorizontal: 24 }}>{error}</Text>
+        <TouchableOpacity onPress={() => { setError(null); setLoading(true); fetchOrder(); }}
+          style={{ backgroundColor: '#d97706', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Coba Lagi</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
