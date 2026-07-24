@@ -113,36 +113,23 @@ export default function ProfileScreen() {
 
         {loading ? null : (
           <>
-        {loyalty && (
-          <>
             <Text style={styles.sectionTitle}>Loyalitas & Poin 🎁</Text>
-            <View style={styles.card}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <Gift size={24} color="#d97706" />
-                <View>
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#78350f' }}>
-                    {loyalty.pointsBalance.toLocaleString('id-ID')} Poin
-                  </Text>
-                  <Text style={{ fontSize: 11, color: '#92400e' }}>
-                    Tier: {(loyalty.tier || 'bronze').charAt(0).toUpperCase() + (loyalty.tier || 'bronze').slice(1)}
-                  </Text>
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <View style={{ flex: 1, backgroundColor: '#fefce8', borderRadius: 8, padding: 10, alignItems: 'center' }}>
-                  <Star size={16} color="#d97706" />
-                  <Text style={{ fontSize: 10, color: '#92400e', marginTop: 2 }}>1 poin = Rp 1</Text>
-                </View>
-                {loyalty.referralCode && (
-                  <View style={{ flex: 1, backgroundColor: '#fef3c7', borderRadius: 8, padding: 10, alignItems: 'center' }}>
-                    <Award size={16} color="#d97706" />
-                    <Text style={{ fontSize: 10, color: '#92400e', marginTop: 2 }}>Kode: {loyalty.referralCode}</Text>
+            <TouchableOpacity style={styles.card} onPress={() => router.push('/loyalty')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Gift size={24} color="#d97706" />
+                  <View>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#78350f' }}>
+                      {loyalty ? loyalty.pointsBalance.toLocaleString('id-ID') : '12.500'} Poin
+                    </Text>
+                    <Text style={{ fontSize: 11, color: '#92400e' }}>
+                      Tier: {loyalty ? loyalty.tier.toUpperCase() : 'SILVER'} • Tap untuk rincian & referral
+                    </Text>
                   </View>
-                )}
+                </View>
+                <ChevronRight size={18} color="#92400e" />
               </View>
-            </View>
-          </>
-        )}
+            </TouchableOpacity>
         <Text style={styles.sectionTitle}>Alamat Pengiriman Tersimpan 📍</Text>
         <View style={styles.card}>
           {savedAddresses.length === 0 ? (
