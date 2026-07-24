@@ -4,6 +4,36 @@ const API_BASE = 'https://rumah-keripik.vercel.app';
 const ACCESS_TOKEN_KEY = 'rumah_kripik_access_token';
 const REFRESH_TOKEN_KEY = 'rumah_kripik_refresh_token';
 
+const RETRY_BASE_MS = 1000;
+const RETRY_MAX_MS = 30000;
+const RETRY_JITTER_MAX = 500;
+const RETRY_MAX_ATTEMPTS = 5;
+
+export function computeBackoff(attempt: number): number {
+  const exponential = Math.min(RETRY_BASE_MS * Math.pow(2, attempt), RETRY_MAX_MS);
+  const jitter = Math.random() * RETRY_JITTER_MAX;
+  return exponential + jitter;
+}
+
+export async function fetchWithRetry(input: RequestInfo, init?: RequestInit, attempt = 0): Promise<Response> {
+  try {
+    const res = await fetch(input, init);
+    if (res.status === 429 && attempt < RETRY_MAX_ATTEMPTS) {
+      const delay = computeBackoff(attempt);
+      await new Promise((r) => setTimeout(r, delay));
+      return fetchWithRetry(input, init, attempt + 1);
+    }
+    return res;
+  } catch (err) {
+    if (attempt < RETRY_MAX_ATTEMPTS) {
+      const delay = computeBackoff(attempt);
+      await new Promise((r) => setTimeout(r, delay));
+      return fetchWithRetry(input, init, attempt + 1);
+    }
+    throw err;
+  }
+}
+
 let accessToken: string | null = null;
 
 export function getApiBase(): string {
@@ -57,13 +87,13 @@ export async function apiFetch<T = unknown>(
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let res = await fetchWithRetry(`${API_BASE}${path}`, { ...options, headers });
   if (res.status === 401 && token) {
     const refreshed = await refreshTokens();
     if (refreshed) {
       const newToken = await getAccessToken();
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      res = await fetchWithRetry(`${API_BASE}${path}`, { ...options, headers });
     }
   }
 
@@ -80,12 +110,39 @@ export async function trackOrder(
 ): Promise<import('./types').OrderTrackResponse> {
   const params = new URLSearchParams({ code });
   if (phone) params.set('phone', phone);
-  const res = await fetch(`${API_BASE}/api/order/track?${params}`);
+  const res = await fetchWithRetry(`${API_BASE}/api/order/track?${params}`);
   if (!res.ok) {
     const err = await res.json().catch(() => null);
     throw new Error(err?.error || 'Pesanan tidak ditemukan');
   }
   return res.json();
+}
+
+export async function trackOrderSSE(
+  orderId: string,
+  onEvent: (data: any) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/tracking/${orderId}`, {
+    signal,
+    headers: { Accept: 'text/event-stream' },
+  });
+  if (!res.ok || !res.body) throw new Error('SSE endpoint unavailable');
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try { onEvent(JSON.parse(line.slice(6))); } catch {}
+      }
+    }
+  }
 }
 
 export async function getPaymentMethods(): Promise<import('./types').PaymentMethodDto[]> {
@@ -214,7 +271,7 @@ export async function clearSessions(): Promise<void> {
 }
 
 export async function submitRating(orderId: string, rating: number): Promise<void> {
-  await fetch(`${API_BASE}/api/order/rate`, {
+  await fetchWithRetry(`${API_BASE}/api/order/rate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getAccessToken()}` },
     body: JSON.stringify({ orderId, rating }),

@@ -11,6 +11,7 @@ import type { OrderTrackResponse } from '../../src/lib/types';
 
 const API_BASE = 'https://rumah-keripik.vercel.app';
 const POLL_INTERVAL = 5000;
+const SSE_TIMEOUT = 50000;
 
 export default function OrderDetailScreen() {
   const params = useLocalSearchParams();
@@ -21,13 +22,61 @@ const id = params.id as string;
   const [error, setError] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
   const [sseEvents, setSseEvents] = useState<Array<{ event_type: string; event_data: string | null; created_at: string }>>([]);
+  const [sseActive, setSseActive] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const abortRef = useRef<AbortController | null>(null);
+  const sseRetryRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     fetchOrder();
-    pollRef.current = setInterval(fetchEvents, POLL_INTERVAL);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    startSSE();
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (abortRef.current) abortRef.current.abort();
+      if (sseRetryRef.current) clearTimeout(sseRetryRef.current);
+    };
   }, [id]);
+
+  async function startSSE() {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      const res = await fetch(`${API_BASE}/api/tracking/${id}`, {
+        signal: controller.signal,
+        headers: { Accept: 'text/event-stream' },
+      });
+      if (!res.ok || !res.body) throw new Error('SSE not available');
+      setSseActive(true);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (parsed.events) {
+                setSseEvents(parsed.events);
+              }
+              if (parsed.courier_location) {
+                setSseEvents((prev) => [...prev, { event_type: 'courier_location', event_data: JSON.stringify(parsed.courier_location), created_at: parsed.courier_location.timestamp || new Date().toISOString() }]);
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+      setSseActive(false);
+      sseRetryRef.current = setTimeout(startSSE, 5000);
+    }
+  }
 
   const fetchOrder = async () => {
     try {
@@ -44,7 +93,7 @@ const id = params.id as string;
     }
   };
 
-  const fetchEvents = async () => {
+  const fallbackPoll = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/order/track?code=${id}`);
       if (res.ok) {
@@ -167,8 +216,8 @@ const id = params.id as string;
               </Text>
             )}
             <View style={styles.liveDot}>
-              <View style={styles.livePulse} />
-              <Text style={styles.liveText}>Live</Text>
+              <View style={[styles.livePulse, sseActive && styles.livePulseActive]} />
+              <Text style={styles.liveText}>{sseActive ? 'Live SSE' : 'Live'}</Text>
             </View>
           </View>
         )}
@@ -250,6 +299,7 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 4,
   },
   livePulse: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e' },
+  livePulseActive: { backgroundColor: '#059669', shadowColor: '#059669', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 4 },
   liveText: { fontSize: 11, fontWeight: '700', color: '#22c55e' },
   eventsSection: { gap: 8, marginTop: 16 },
   eventRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
