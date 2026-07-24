@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, Phone, MapPin, MapPinned, PackageCheck, ChevronRight, Save } from 'lucide-react-native';
-import { apiFetch } from '../../src/lib/api-client';
+import { User, Phone, MapPin, MapPinned, PackageCheck, ChevronRight, Save, Gift, Award, Star } from 'lucide-react-native';
+import { apiFetch, getAccessToken } from '../../src/lib/api-client';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -22,14 +22,30 @@ export default function ProfileScreen() {
   const [savedAddresses, setSavedAddresses] = useState<{ id: number; label: string; addressText: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loyalty, setLoyalty] = useState<{ pointsBalance: number; tier: string; referralCode?: string } | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const res = await apiFetch<{ profile: { nama: string | null; phone: string | null; email: string | null } | null; addresses: { id: number; label: string | null; addressText: string }[] }>('/api/public/me');
+      const res = await apiFetch<{ profile: { id: string; nama: string | null; phone: string | null; email: string | null } | null; addresses: { id: number; label: string | null; addressText: string }[] }>('/api/public/me');
       if (res.ok && res.data) {
         const p = res.data.profile;
         if (p) { setNama(p.nama || ''); setPhone(p.phone || ''); setEmail(p.email || ''); }
         setSavedAddresses((res.data.addresses || []).map((a: any) => ({ id: a.id, label: a.label || 'Alamat', addressText: a.addressText })));
+        const cid = p?.id;
+        if (cid) {
+          setCustomerId(cid);
+          const token = await getAccessToken();
+          const lres = await fetch(`https://rumah-keripik.vercel.app/api/loyalty/balance?customerId=${cid}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (lres.ok) {
+            const ldata = await lres.json();
+            if (ldata.ok && ldata.account) {
+              setLoyalty({ pointsBalance: ldata.account.pointsBalance, tier: ldata.account.tier, referralCode: ldata.account.referralCode });
+            }
+          }
+        }
       }
       setLoading(false);
     })();
@@ -97,6 +113,36 @@ export default function ProfileScreen() {
 
         {loading ? null : (
           <>
+        {loyalty && (
+          <>
+            <Text style={styles.sectionTitle}>Loyalitas & Poin 🎁</Text>
+            <View style={styles.card}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <Gift size={24} color="#d97706" />
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: '#78350f' }}>
+                    {loyalty.pointsBalance.toLocaleString('id-ID')} Poin
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#92400e' }}>
+                    Tier: {(loyalty.tier || 'bronze').charAt(0).toUpperCase() + (loyalty.tier || 'bronze').slice(1)}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={{ flex: 1, backgroundColor: '#fefce8', borderRadius: 8, padding: 10, alignItems: 'center' }}>
+                  <Star size={16} color="#d97706" />
+                  <Text style={{ fontSize: 10, color: '#92400e', marginTop: 2 }}>1 poin = Rp 1</Text>
+                </View>
+                {loyalty.referralCode && (
+                  <View style={{ flex: 1, backgroundColor: '#fef3c7', borderRadius: 8, padding: 10, alignItems: 'center' }}>
+                    <Award size={16} color="#d97706" />
+                    <Text style={{ fontSize: 10, color: '#92400e', marginTop: 2 }}>Kode: {loyalty.referralCode}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </>
+        )}
         <Text style={styles.sectionTitle}>Alamat Pengiriman Tersimpan 📍</Text>
         <View style={styles.card}>
           {savedAddresses.length === 0 ? (

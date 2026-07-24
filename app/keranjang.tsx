@@ -12,9 +12,10 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Minus, Plus, Trash2, CreditCard, Banknote, MapPin, CheckCircle2 } from 'lucide-react-native';
+import { Minus, Plus, Trash2, CreditCard, Banknote, MapPin, CheckCircle2, ExternalLink } from 'lucide-react-native';
 import { useCart } from '../src/lib/cart-context';
 import { apiFetch, getAccessToken } from '../src/lib/api-client';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function CartScreen() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function CartScreen() {
         })),
       };
 
-      const res = await apiFetch<{ order: { idTransaksi: string; kodePesanan: string } }>('/api/order/web', {
+      const res = await apiFetch<{ order: { idTransaksi: string; kodePesanan: string; checkoutUrl?: string | null } }>('/api/order/web', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -73,14 +74,27 @@ export default function CartScreen() {
 
       clearCart();
       const order = res.data!.order;
-      
-      Alert.alert(
-        '✅ Pesanan Berhasil!',
-        `Kode: ${order.kodePesanan}\n\nAdmin akan segera memproses pesanan Anda.`,
-        [
-          { text: 'Lihat Status', onPress: () => router.push(`/lacak/${order.idTransaksi}`) },
-        ]
-      );
+
+      if (order.checkoutUrl) {
+        const result = await WebBrowser.openAuthSessionAsync(order.checkoutUrl, 'rumahkripik://payment');
+        if (result.type === 'success') {
+          Alert.alert('Pembayaran Diproses', 'Status pembayaran akan dikonfirmasi.', [
+            { text: 'Lihat Status', onPress: () => router.push(`/lacak/${order.idTransaksi}`) },
+          ]);
+        } else {
+          Alert.alert('Pembayaran Dibatalkan', `Kode: ${order.kodePesanan}\n\nSelesaikan pembayaran melalui menu Lacak.`, [
+            { text: 'Lihat Status', onPress: () => router.push(`/lacak/${order.idTransaksi}`) },
+          ]);
+        }
+      } else {
+        Alert.alert(
+          'Pesanan Berhasil!',
+          `Kode: ${order.kodePesanan}\n\nAdmin akan segera memproses pesanan Anda.`,
+          [
+            { text: 'Lihat Status', onPress: () => router.push(`/lacak/${order.idTransaksi}`) },
+          ]
+        );
+      }
     } catch {
       Alert.alert('Error', 'Terjadi kesalahan sistem saat memproses pesanan.');
     } finally {
