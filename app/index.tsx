@@ -14,7 +14,7 @@ import { Sparkles, ShoppingBag, Search, Tag, User, Plus, Check, Truck, MessageSq
 import { useCart, CartProduct } from '../src/lib/cart-context';
 import { AiChatWorkspace } from '../src/components/AiChatWorkspace';
 
-const API_BASE_URL = 'https://rumahkripik.com';
+const API_BASE_URL = 'https://rumah-keripik.vercel.app';
 const CATEGORIES = ['Semua', 'Pedas', 'Original', 'Balado', 'Manis'];
 
 export default function HomeScreen() {

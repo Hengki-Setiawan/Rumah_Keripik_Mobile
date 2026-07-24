@@ -55,6 +55,24 @@ export default function RootLayout() {
               headerTintColor: '#92400e',
             }}
           />
+          <Stack.Screen
+            name="saya/loyalty"
+            options={{
+              headerShown: true,
+              title: 'Poin & Loyalitas',
+              headerStyle: { backgroundColor: '#fffbeb' },
+              headerTintColor: '#92400e',
+            }}
+          />
+          <Stack.Screen
+            name="(auth)/login"
+            options={{
+              headerShown: true,
+              title: 'Masuk / Daftar',
+              headerStyle: { backgroundColor: '#fffbeb' },
+              headerTintColor: '#92400e',
+            }}
+          />
         </Stack>
       </CartProvider>
     </SafeAreaProvider>

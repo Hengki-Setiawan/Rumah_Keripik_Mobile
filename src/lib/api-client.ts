@@ -1,200 +1,89 @@
 import * as SecureStore from 'expo-secure-store';
-import type {
-  ApiResponse,
-  ChatCartDto,
-  ChatMessageDto,
-  ChatSessionSummary,
-  CustomerContextDto,
-  CustomerProfileDto,
-  SavedAddressDto,
-  OrderDto,
-  PaymentMethodDto,
-  OrderTrackResponse,
-} from './types';
 
-const BASE_URL = 'https://rumah-keripik.vercel.app';
-const COOKIE_KEY = 'rk_session_cookie';
+const API_BASE = 'https://rumah-keripik.vercel.app';
+const ACCESS_TOKEN_KEY = 'rumah_kripik_access_token';
+const REFRESH_TOKEN_KEY = 'rumah_kripik_refresh_token';
 
-async function getStoredCookie(): Promise<string | null> {
-  return SecureStore.getItemAsync(COOKIE_KEY);
+let accessToken: string | null = null;
+
+export function getApiBase(): string {
+  return API_BASE;
 }
 
-async function saveCookieFromResponse(res: Response): Promise<void> {
-  const setCookie = res.headers.get('set-cookie');
-  if (setCookie) {
-    const cookieValue = setCookie.split(';')[0];
-    await SecureStore.setItemAsync(COOKIE_KEY, cookieValue);
+export async function setTokens(access: string, refresh: string) {
+  accessToken = access;
+  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, access);
+  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refresh);
+}
+
+export async function clearTokens() {
+  accessToken = null;
+  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+}
+
+export async function getAccessToken(): Promise<string | null> {
+  if (accessToken) return accessToken;
+  accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+  return accessToken;
+}
+
+async function refreshTokens(): Promise<boolean> {
+  const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${API_BASE}/api/mobile/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    await setTokens(data.accessToken, data.refreshToken);
+    return true;
+  } catch {
+    return false;
   }
 }
 
-async function request<T>(
+export async function apiFetch<T = unknown>(
   path: string,
-  options: RequestInit = {},
-  retries = 2,
-): Promise<T> {
-  const url = `${BASE_URL}${path}`;
-  const storedCookie = await getStoredCookie();
+  options: RequestInit = {}
+): Promise<{ ok: boolean; data?: T; error?: string; status: number }> {
+  const token = await getAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-  if (storedCookie) {
-    headers['Cookie'] = storedCookie;
-  }
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const res = await fetch(url, {
-        ...options,
-        headers,
-        credentials: 'include',
-      });
-
-      await saveCookieFromResponse(res);
-
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || `Request failed: ${res.status}`);
-      }
-      return data as T;
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error('Request failed');
-      if (attempt < retries) {
-        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
-      }
+  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  if (res.status === 401 && token) {
+    const refreshed = await refreshTokens();
+    if (refreshed) {
+      const newToken = await getAccessToken();
+      headers['Authorization'] = `Bearer ${newToken}`;
+      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
     }
   }
-  throw lastError || new Error('Request failed');
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    return { ok: false, error: json?.error || `HTTP ${res.status}`, status: res.status };
+  }
+  return { ok: true, data: json, status: res.status };
 }
 
-export async function createSession(
-  forceNew = false,
-): Promise<{
-  chatSession: { id: string; stage: string };
-  messages: ChatMessageDto[];
-  cart: ChatCartDto | null;
-  customerContext: CustomerContextDto | null;
-}> {
-  return request('/api/customer/session', {
-    method: 'POST',
-    body: JSON.stringify({ forceNew }),
-  });
-}
-
-export async function sendMessage(
-  chatSessionId: string,
-  message: string,
-): Promise<{
-  messages: ChatMessageDto[];
-  cart: ChatCartDto | null;
-  stage: string;
-}> {
-  return request('/api/chat', {
-    method: 'POST',
-    body: JSON.stringify({ chatSessionId, message }),
-  });
-}
-
-export async function runAction(
-  chatSessionId: string,
-  action: string,
-  payload: Record<string, unknown> = {},
-): Promise<{
-  messages: ChatMessageDto[];
-  cart: ChatCartDto | null;
-  stage: string;
-}> {
-  return request('/api/chat/action', {
-    method: 'POST',
-    body: JSON.stringify({ chatSessionId, action, payload }),
-  });
-}
-
-export async function getSessions(): Promise<ChatSessionSummary[]> {
-  const data = await request<{ sessions: ChatSessionSummary[] }>(
-    '/api/chat/sessions',
-  );
-  return data.sessions;
-}
-
-export async function getSessionState(chatSessionId: string): Promise<{
-  messages: ChatMessageDto[];
-  cart: ChatCartDto | null;
-  stage: string;
-}> {
-  return request(
-    `/api/chat/state?chatSessionId=${encodeURIComponent(chatSessionId)}`,
-  );
-}
-
-export async function deleteSession(chatSessionId: string): Promise<void> {
-  await request(`/api/chat/sessions/${encodeURIComponent(chatSessionId)}`, {
-    method: 'DELETE',
-  });
-}
-
-export async function clearSessions(): Promise<void> {
-  await request('/api/chat/sessions', {
-    method: 'DELETE',
-  });
-}
-
-export async function getProducts() {
-  const data = await request<{ products: unknown[] }>(
-    '/api/public/products',
-  );
-  return data.products;
-}
-
-export async function getProfile(): Promise<{
-  profile: CustomerProfileDto | null;
-  addresses: SavedAddressDto[];
-  orders: OrderDto[];
-}> {
-  const data = await request<{
-    profile: CustomerProfileDto | null;
-    addresses: SavedAddressDto[];
-    orders: OrderDto[];
-  }>('/api/public/me');
-  return data;
-}
-
-export async function saveProfile(profile: { nama: string; phone: string; email: string }) {
-  return request('/api/public/me', {
-    method: 'PATCH',
-    body: JSON.stringify(profile),
-  });
-}
-
-export async function getPaymentMethods() {
-  const data = await request<{ methods: PaymentMethodDto[] }>('/api/public/payment-methods');
-  return data.methods;
-}
-
-export async function getSavedAddresses() {
-  const data = await request<{ addresses: SavedAddressDto[] }>('/api/public/saved-addresses');
-  return data.addresses;
-}
-
-export async function saveAddress(address: Partial<SavedAddressDto>) {
-  return request('/api/public/saved-addresses', {
-    method: 'POST',
-    body: JSON.stringify(address),
-  });
-}
-
-export async function checkPaymentStatus(orderId: string): Promise<{ paymentStatus: string; orderStatus: string; isPaid: boolean }> {
-  return request(`/api/public/payment-status?orderId=${encodeURIComponent(orderId)}`);
-}
-
-export async function trackOrder(code: string, phone?: string, token?: string) {
+export async function trackOrder(
+  code: string,
+  phone?: string
+): Promise<import('./types').OrderTrackResponse> {
   const params = new URLSearchParams({ code });
   if (phone) params.set('phone', phone);
-  if (token) params.set('token', token);
-  return request<OrderTrackResponse>(`/api/order/track?${params.toString()}`);
-}
-
-export async function clearSessionCookie(): Promise<void> {
-  await SecureStore.deleteItemAsync(COOKIE_KEY);
+  const res = await fetch(`${API_BASE}/api/order/track?${params}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.error || 'Pesanan tidak ditemukan');
+  }
+  return res.json();
 }
