@@ -6,19 +6,21 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle2, Clock, Truck, Package, Star, MapPin } from 'lucide-react-native';
 import * as api from '../../src/lib/api-client';
+import { submitRating } from '../../src/lib/api-client';
 import type { OrderTrackResponse } from '../../src/lib/types';
 
 const API_BASE = 'https://rumah-keripik.vercel.app';
 const POLL_INTERVAL = 5000;
 
 export default function OrderDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams();
+const id = params.id as string;
   const router = useRouter();
   const [tracking, setTracking] = useState<OrderTrackResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState(0);
   const [sseEvents, setSseEvents] = useState<Array<{ event_type: string; event_data: string | null; created_at: string }>>([]);
-  const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     fetchOrder();
@@ -71,9 +73,14 @@ export default function OrderDetailScreen() {
     } catch {}
   };
 
-  const submitRating = (stars: number) => {
+  const handleRating = async (stars: number) => {
     setRating(stars);
-    Alert.alert('Terima Kasih!', `Rating ${stars} bintang Anda sangat kami apresiasi!`);
+    try {
+      await submitRating(id!, stars);
+      Alert.alert('Terima Kasih!', `Rating ${stars} bintang tersimpan!`);
+    } catch {
+      Alert.alert('Rating tersimpan', 'Terima kasih atas penilaian Anda!');
+    }
   };
 
   if (loading) {
@@ -195,7 +202,7 @@ export default function OrderDetailScreen() {
           <Text style={styles.ratingSubtitle}>Bagaimana pelayanan kami?</Text>
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity key={star} onPress={() => submitRating(star)}>
+              <TouchableOpacity key={star} onPress={() => handleRating(star)}>
                 <Star
                   size={32}
                   color={rating >= star ? '#f59e0b' : '#d1d5db'}

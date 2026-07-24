@@ -87,3 +87,136 @@ export async function trackOrder(
   }
   return res.json();
 }
+
+export async function getPaymentMethods(): Promise<import('./types').PaymentMethodDto[]> {
+  const res = await fetch(`${API_BASE}/api/public/payment-methods`);
+  const json = await res.json();
+  return json.methods || [];
+}
+
+export async function getSavedAddresses(): Promise<import('./types').SavedAddressDto[]> {
+  const token = await getAccessToken();
+  const res = await fetch(`${API_BASE}/api/public/saved-addresses`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const json = await res.json();
+  return json.addresses || [];
+}
+
+export async function getProfile(): Promise<{ profile: import('./types').CustomerProfileDto | null }> {
+  const token = await getAccessToken();
+  const res = await fetch(`${API_BASE}/api/public/me`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  return res.json();
+}
+
+export async function checkPaymentStatus(orderId: string): Promise<{ isPaid: boolean; paymentStatus: string }> {
+  const res = await fetch(`${API_BASE}/api/public/payment-status?orderId=${encodeURIComponent(orderId)}`);
+  const json = await res.json();
+  return { isPaid: json.isPaid || false, paymentStatus: json.paymentStatus || '' };
+}
+
+export async function getProducts(): Promise<import('./types').ProductDto[]> {
+  const res = await fetch(`${API_BASE}/api/public/products`);
+  const json = await res.json();
+  return json.products || [];
+}
+
+export async function getSessions(): Promise<import('./types').ChatSessionSummary[]> {
+  const res = await apiFetch<{ sessions: import('./types').ChatSessionSummary[] }>('/api/chat/sessions');
+  return res.data?.sessions || [];
+}
+
+export async function createSession(forceNew?: boolean): Promise<{
+  chatSession: { id: string; stage?: string };
+  messages: import('./types').ChatMessageDto[];
+  cart: import('./types').ChatCartDto | null;
+  customerContext: import('./types').CustomerContextDto | null;
+}> {
+  const res = await apiFetch<{
+    chatSession: { id: string; stage?: string };
+    messages: import('./types').ChatMessageDto[];
+    cart: import('./types').ChatCartDto | null;
+    customerContext: import('./types').CustomerContextDto | null;
+    stage: string;
+  }>('/api/chat/sessions', { method: 'POST' });
+  if (!res.ok || !res.data) throw new Error(res.error || 'Session gagal');
+  return {
+    chatSession: { id: res.data.chatSession.id, stage: (res.data as any).stage },
+    messages: res.data.messages || [],
+    cart: res.data.cart || null,
+    customerContext: res.data.customerContext || null,
+  };
+}
+
+export async function sendMessage(sessionId: string, text: string): Promise<{
+  messages: import('./types').ChatMessageDto[];
+  cart: import('./types').ChatCartDto | null;
+  stage?: string;
+}> {
+  const res = await apiFetch<{
+    messages: import('./types').ChatMessageDto[];
+    cart: import('./types').ChatCartDto | null;
+    stage?: string;
+  }>('/api/chat/action', {
+    method: 'POST',
+    body: JSON.stringify({ chatSessionId: sessionId, action: 'send_message', payload: { text } }),
+  });
+  if (!res.ok || !res.data) throw new Error(res.error || 'Pesan gagal');
+  return { messages: res.data.messages || [], cart: res.data.cart || null, stage: res.data.stage };
+}
+
+export async function runAction(
+  sessionId: string,
+  action: string,
+  payload?: Record<string, unknown>
+): Promise<{ messages: import('./types').ChatMessageDto[]; cart: import('./types').ChatCartDto | null }> {
+  const res = await apiFetch<{
+    messages: import('./types').ChatMessageDto[];
+    cart: import('./types').ChatCartDto | null;
+  }>('/api/chat/action', {
+    method: 'POST',
+    body: JSON.stringify({ chatSessionId: sessionId, action, payload }),
+  });
+  if (!res.ok || !res.data) throw new Error(res.error || 'Aksi gagal');
+  return { messages: res.data.messages || [], cart: res.data.cart || null };
+}
+
+export async function getSessionState(sessionId: string): Promise<{
+  messages: import('./types').ChatMessageDto[];
+  cart: import('./types').ChatCartDto | null;
+  stage: string;
+}> {
+  const res = await apiFetch<{
+    messages: import('./types').ChatMessageDto[];
+    cart: import('./types').ChatCartDto | null;
+    stage: string;
+    chatSession: { stage: string };
+  }>(`/api/chat/state?chatSessionId=${encodeURIComponent(sessionId)}`);
+  if (!res.ok || !res.data) throw new Error(res.error || 'Gagal muat state');
+  return {
+    messages: res.data.messages || [],
+    cart: res.data.cart || null,
+    stage: res.data.stage || res.data.chatSession?.stage || '',
+  };
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  await apiFetch('/api/chat/sessions', {
+    method: 'DELETE',
+    body: JSON.stringify({ sessionId }),
+  });
+}
+
+export async function clearSessions(): Promise<void> {
+  await apiFetch('/api/chat/sessions', { method: 'DELETE' });
+}
+
+export async function submitRating(orderId: string, rating: number): Promise<void> {
+  await fetch(`${API_BASE}/api/order/rate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getAccessToken()}` },
+    body: JSON.stringify({ orderId, rating }),
+  });
+}

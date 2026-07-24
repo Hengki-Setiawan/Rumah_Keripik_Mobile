@@ -40,7 +40,7 @@ export default function LoginScreen() {
         Alert.alert('Error', data.error || 'Gagal');
         return;
       }
-      const { setTokens } = await import('../src/lib/api-client');
+      const { setTokens } = await import('../../src/lib/api-client');
       await setTokens(data.accessToken, data.refreshToken);
       router.replace('/');
     } catch (err) {

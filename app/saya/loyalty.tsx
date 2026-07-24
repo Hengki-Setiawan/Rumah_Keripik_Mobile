@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Share, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Gift, Share2, ChevronRight, Star, TrendingUp } from 'lucide-react-native';
-import { getLoyaltyInfo, getTierProgress, redeemPoints, type LoyaltyAccount, type PointsHistoryEntry } from '../src/lib/loyalty';
-import { getAccessToken } from '../src/lib/api-client';
+import { getTierProgress, redeemPoints as apiRedeem, type LoyaltyAccount, type PointsHistoryEntry } from '../../src/lib/loyalty';
+import { getAccessToken } from '../../src/lib/api-client';
 
 export default function LoyaltyScreen() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function LoyaltyScreen() {
       Alert.alert('Minimal', 'Minimal redeem 10.000 poin');
       return;
     }
-    const res = await redeemPoints('me', points);
+    const res = await apiRedeem('me', points);
     if (res.ok) {
       Alert.alert('Sukses', `Berhasil redeem ${res.data?.pointsUsed} poin = Rp ${res.data?.reward}`);
       loadLoyalty();

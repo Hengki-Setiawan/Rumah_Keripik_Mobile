@@ -40,7 +40,7 @@ export function useChat() {
       setMessages(data.messages);
       setCart(data.cart);
       setStarted(data.messages.length > 0);
-      setStage(data.chatSession.stage);
+      setStage(data.chatSession.stage || '');
       loadSessions();
 
       if (data.messages.length === 0 && !forceNew) {
@@ -114,7 +114,6 @@ export function useChat() {
       setMessages(data.messages);
       setCart(data.cart);
       setStarted(data.messages.length > 0);
-      if (data.stage) setStage(data.stage);
       loadSessions();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Aksi gagal');
