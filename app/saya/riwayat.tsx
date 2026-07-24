@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Package, Clock, CheckCircle2, XCircle, RefreshCw } from 'lucide-react-native';
 import { colors, spacing, borderRadius } from '../../src/theme';
@@ -120,6 +120,13 @@ export default function RiwayatScreen() {
               {item.paymentMethod && (
                 <Text style={styles.paymentMethod}>{item.paymentMethod}</Text>
               )}
+              <TouchableOpacity style={styles.reorderBtn} onPress={() => {
+                Alert.alert('Pesan Lagi', 'Buka halaman utama dan mulai chat untuk pesan ulang', [
+                  { text: 'OK', onPress: () => router.push('/') }
+                ]);
+              }}>
+                <Text style={styles.reorderBtnText}>Pesan Lagi</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
           )}
         />
@@ -145,4 +152,6 @@ const styles = StyleSheet.create({
   total: { fontSize: 16, fontWeight: '700', color: '#c55a2b' },
   date: { fontSize: 11, color: '#888' },
   paymentMethod: { fontSize: 11, color: '#999', marginTop: 4 },
+  reorderBtn: { marginTop: 8, backgroundColor: '#f0dfca', borderRadius: 8, padding: 8, alignItems: 'center' },
+  reorderBtnText: { fontSize: 12, fontWeight: '600', color: '#c55a2b' },
 });

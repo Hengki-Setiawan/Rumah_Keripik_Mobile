@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Home, Briefcase, MapPin, Plus, Pencil, Trash2, Check } from 'lucide-react-native';
 import { colors, spacing, borderRadius } from '../../src/theme';
-import { getSavedAddresses } from '../../src/lib/api-client';
+import { getSavedAddresses, apiFetch } from '../../src/lib/api-client';
 
 interface Address {
   id: number;
@@ -24,14 +24,45 @@ export default function AlamatScreen() {
 
   useEffect(() => { load(); }, []);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getSavedAddresses();
       setAddresses(data as Address[]);
     } catch { setAddresses([]); }
     setLoading(false);
-  };
+  }, []);
+
+  async function handleDelete(id: number) {
+    Alert.alert('Hapus Alamat?', 'Alamat akan dihapus permanen.', [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Hapus', style: 'destructive', onPress: async () => {
+        const res = await apiFetch('/api/public/me', { method: 'DELETE', body: JSON.stringify({ addressId: id }) });
+        if (res.ok) load();
+        else Alert.alert('Gagal', res.error || 'Coba lagi');
+      }},
+    ]);
+  }
+
+  async function handleSetDefault(item: Address) {
+    const res = await apiFetch('/api/public/me', {
+      method: 'POST',
+      body: JSON.stringify({
+        id: item.id,
+        label: item.label || 'Alamat',
+        recipientName: item.recipientName || '',
+        phone: item.phone || '',
+        addressText: item.addressText,
+        isDefault: true,
+      }),
+    });
+    if (res.ok) load();
+    else Alert.alert('Gagal', res.error || 'Coba lagi');
+  }
+
+  async function handleAdd() {
+    router.push('/(auth)/login');
+  }
 
   const iconMap: Record<string, React.ReactNode> = {
     rumah: <Home size={18} color={colors.accent} />,
@@ -51,7 +82,7 @@ export default function AlamatScreen() {
           contentContainerStyle={{ padding: spacing.md }}
           ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#999', marginTop: 40 }}>Belum ada alamat tersimpan</Text>}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.card} onPress={() => {}}>
+            <TouchableOpacity style={styles.card} onPress={() => handleSetDefault(item)}>
               <View style={styles.cardHeader}>
                 <View style={styles.labelRow}>
                   {iconMap[item.label?.toLowerCase() || 'lainnya'] || <MapPin size={18} color={colors.accent} />}
@@ -64,10 +95,7 @@ export default function AlamatScreen() {
                   )}
                 </View>
                 <View style={styles.actions}>
-                  <TouchableOpacity onPress={() => Alert.alert('Edit', 'Fitur edit alamat')}>
-                    <Pencil size={16} color="#666" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => Alert.alert('Hapus', 'Fitur hapus alamat')}>
+                  <TouchableOpacity onPress={() => handleDelete(item.id)}>
                     <Trash2 size={16} color="#dc2626" />
                   </TouchableOpacity>
                 </View>
@@ -80,7 +108,7 @@ export default function AlamatScreen() {
           )}
         />
       )}
-      <TouchableOpacity style={styles.addBtn} onPress={() => Alert.alert('Tambah Alamat', 'Fitur tambah alamat')}>
+      <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
         <Plus size={20} color="#fff" />
         <Text style={styles.addBtnText}>Tambah Alamat Baru</Text>
       </TouchableOpacity>

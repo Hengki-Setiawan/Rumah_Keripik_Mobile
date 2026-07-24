@@ -14,8 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Minus, Plus, Trash2, CreditCard, Banknote, MapPin, CheckCircle2 } from 'lucide-react-native';
 import { useCart } from '../src/lib/cart-context';
-
-const API_BASE_URL = 'https://rumahkripik.com';
+import { apiFetch, getAccessToken } from '../src/lib/api-client';
 
 export default function CartScreen() {
   const router = useRouter();
@@ -25,7 +24,7 @@ export default function CartScreen() {
   const [noHp, setNoHp] = useState('');
   const [alamat, setAlamat] = useState('');
   const [catatan, setCatatan] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'TRANSFER_BNI' | 'QRIS'>('COD');
+  const [paymentMethod, setPaymentMethod] = useState<'PM-COD' | 'PM-BCA-TRANSFER'>('PM-COD');
   const [submitting, setSubmitting] = useState(false);
 
   const handleCheckout = async () => {
@@ -42,39 +41,44 @@ export default function CartScreen() {
       return;
     }
 
+    const token = await getAccessToken();
+    if (!token) {
+      Alert.alert('Login Diperlukan', 'Silakan login terlebih dahulu untuk checkout.');
+      router.push('/(auth)/login');
+      return;
+    }
+
     try {
       setSubmitting(true);
       const payload = {
-        nama_penerima: namaPenerima,
-        no_wa_pelanggan: noHp.startsWith('0') ? `62${noHp.slice(1)}` : noHp,
-        alamat_pengiriman: alamat,
-        catatan,
-        payment_method: paymentMethod,
+        source: 'web',
+        customer: { name: namaPenerima, phone: noHp },
+        address: { text: alamat, note: catatan || undefined },
+        paymentMethodId: paymentMethod,
         items: cart.map((item) => ({
           id_produk: item.id_produk,
           qty: item.qty,
-          harga_satuan: item.harga_jual,
         })),
-        total_bayar: totalAmount,
       };
 
-      const res = await fetch(`${API_BASE_URL}/api/public/order-event`, {
+      const res = await apiFetch<{ order: { idTransaksi: string; kodePesanan: string } }>('/api/order/web', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).catch(() => null);
+      });
+
+      if (!res.ok) {
+        Alert.alert('Gagal', res.error || 'Terjadi kesalahan');
+        return;
+      }
 
       clearCart();
-      const mockCode = `TX-MBL-${Date.now().toString().slice(-6)}`;
+      const order = res.data!.order;
       
       Alert.alert(
-        '✅ Pesanan Berhasil dibuat!',
-        `Kode Pesanan: ${mockCode}\n\nTerima kasih sudah memesan di Rumah Keripik!`,
+        '✅ Pesanan Berhasil!',
+        `Kode: ${order.kodePesanan}\n\nAdmin akan segera memproses pesanan Anda.`,
         [
-          {
-            text: 'Lihat Status Pesanan',
-            onPress: () => router.replace(`/lacak/${mockCode}`),
-          },
+          { text: 'Lihat Status', onPress: () => router.push(`/lacak/${order.idTransaksi}`) },
         ]
       );
     } catch {
@@ -184,28 +188,28 @@ export default function CartScreen() {
           <TouchableOpacity
             style={[
               styles.paymentOption,
-              paymentMethod === 'COD' ? styles.paymentOptionActive : null,
+              paymentMethod === 'PM-COD' ? styles.paymentOptionActive : null,
             ]}
-            onPress={() => setPaymentMethod('COD')}
+            onPress={() => setPaymentMethod('PM-COD')}
           >
-            <Banknote size={20} color={paymentMethod === 'COD' ? '#d97706' : '#78350f'} />
+            <Banknote size={20} color={paymentMethod === 'PM-COD' ? '#d97706' : '#78350f'} />
             <Text style={styles.paymentText}>COD (Bayar di Tempat)</Text>
-            {paymentMethod === 'COD' && <CheckCircle2 size={18} color="#d97706" />}
+            {paymentMethod === 'PM-COD' && <CheckCircle2 size={18} color="#d97706" />}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
               styles.paymentOption,
-              paymentMethod === 'TRANSFER_BNI' ? styles.paymentOptionActive : null,
+              paymentMethod === 'PM-BCA-TRANSFER' ? styles.paymentOptionActive : null,
             ]}
-            onPress={() => setPaymentMethod('TRANSFER_BNI')}
+            onPress={() => setPaymentMethod('PM-BCA-TRANSFER')}
           >
             <CreditCard
               size={20}
-              color={paymentMethod === 'TRANSFER_BNI' ? '#d97706' : '#78350f'}
+              color={paymentMethod === 'PM-BCA-TRANSFER' ? '#d97706' : '#78350f'}
             />
-            <Text style={styles.paymentText}>Transfer BNI (123-456-7890)</Text>
-            {paymentMethod === 'TRANSFER_BNI' && <CheckCircle2 size={18} color="#d97706" />}
+            <Text style={styles.paymentText}>Transfer Bank (BCA/BNI/Mandiri)</Text>
+            {paymentMethod === 'PM-BCA-TRANSFER' && <CheckCircle2 size={18} color="#d97706" />}
           </TouchableOpacity>
         </View>
 
