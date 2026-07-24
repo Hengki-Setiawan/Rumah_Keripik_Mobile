@@ -56,6 +56,24 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="saya/riwayat"
+            options={{
+              headerShown: true,
+              title: 'Riwayat Pesanan',
+              headerStyle: { backgroundColor: '#fffbeb' },
+              headerTintColor: '#92400e',
+            }}
+          />
+          <Stack.Screen
+            name="saya/alamat"
+            options={{
+              headerShown: true,
+              title: 'Alamat Saya',
+              headerStyle: { backgroundColor: '#fffbeb' },
+              headerTintColor: '#92400e',
+            }}
+          />
+          <Stack.Screen
             name="saya/loyalty"
             options={{
               headerShown: true,

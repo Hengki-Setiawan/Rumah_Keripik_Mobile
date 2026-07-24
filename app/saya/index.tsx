@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, Phone, MapPin, PackageCheck, ChevronRight, Save } from 'lucide-react-native';
+import { User, Phone, MapPin, MapPinned, PackageCheck, ChevronRight, Save } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -77,13 +77,20 @@ export default function ProfileScreen() {
               </View>
             </View>
           ))}
+          <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/saya/alamat')}>
+            <View style={styles.menuLeft}>
+              <MapPinned size={20} color="#d97706" />
+              <Text style={styles.menuText}>Kelola Alamat</Text>
+            </View>
+            <ChevronRight size={18} color="#92400e" />
+          </TouchableOpacity>
         </View>
 
         {/* Order History Links */}
         <Text style={styles.sectionTitle}>Riwayat & Pelacakan 📦</Text>
         <TouchableOpacity
           style={styles.menuRow}
-          onPress={() => router.push('/lacak')}
+          onPress={() => router.push('/saya/riwayat')}
         >
           <View style={styles.menuLeft}>
             <PackageCheck size={20} color="#d97706" />
