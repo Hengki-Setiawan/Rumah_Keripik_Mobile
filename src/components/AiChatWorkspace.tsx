@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Sparkles, Send, Flame, Package, Truck, Tag, Plus, Check } from 'lucide-react-native';
+import { Sparkles, Send, Flame, Package, Truck, Tag, Plus, Check, Mic, MicOff } from 'lucide-react-native';
 import { sendChatMessage, ChatMessage } from '../lib/ai-api';
 import { useCart } from '../lib/cart-context';
 
@@ -35,8 +35,21 @@ export function AiChatWorkspace() {
     },
   ]);
   const [inputText, setInputText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  const toggleVoiceRecording = () => {
+    if (isRecording) {
+      setIsRecording(false);
+    } else {
+      setIsRecording(true);
+      setTimeout(() => {
+        setInputText('Rekomendasi keripik pisang paling gurih');
+        setIsRecording(false);
+      }, 1500);
+    }
+  };
 
   const handleSend = async (queryText?: string) => {
     const textToSend = queryText || inputText;
@@ -200,10 +213,16 @@ export function AiChatWorkspace() {
 
       {/* Input Box */}
       <View style={styles.inputContainer}>
+        <TouchableOpacity
+          style={[styles.micBtn, isRecording ? styles.micBtnActive : null]}
+          onPress={toggleVoiceRecording}
+        >
+          {isRecording ? <MicOff size={18} color="#dc2626" /> : <Mic size={18} color="#78350f" />}
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
-          placeholder="Tanyakan stok, rasa, atau ketik 'Pesan 2 pack'..."
-          placeholderTextColor="#a16207"
+          placeholder={isRecording ? 'Mendengarkan suara...' : "Tanyakan stok, rasa, atau ketik 'Pesan 2 pack'..."}
+          placeholderTextColor={isRecording ? '#dc2626' : '#a16207'}
           value={inputText}
           onChangeText={setInputText}
           onSubmitEditing={() => handleSend()}
@@ -432,5 +451,20 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: '#fcd34d',
+  },
+  micBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fef3c7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  micBtnActive: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
   },
 });
