@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE = 'https://rumah-keripik.vercel.app';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://rumah-keripik.netlify.app';
 const ACCESS_TOKEN_KEY = 'rumah_kripik_access_token';
 const REFRESH_TOKEN_KEY = 'rumah_kripik_refresh_token';
 

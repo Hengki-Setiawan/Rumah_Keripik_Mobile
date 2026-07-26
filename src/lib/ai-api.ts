@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://rumahkripik.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://rumah-keripik.vercel.app';
 
 export interface ChatMessage {
   id: string;

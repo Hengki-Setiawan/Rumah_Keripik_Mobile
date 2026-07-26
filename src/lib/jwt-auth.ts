@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch, setTokens, clearTokens } from './api-client';
+import { apiFetch, setTokens, clearTokens, getApiBase } from './api-client';
 
 export interface AuthState {
   isLoggedIn: boolean;
@@ -24,7 +24,7 @@ export function useJwtAuth() {
   }
 
   const login = useCallback(async (phone: string, pin: string) => {
-    const res = await fetch('https://rumah-keripik.vercel.app/api/mobile/auth/login', {
+    const res = await fetch(`${getApiBase()}/api/mobile/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, pin }),
@@ -37,7 +37,7 @@ export function useJwtAuth() {
   }, []);
 
   const register = useCallback(async (phone: string, name: string, pin: string) => {
-    const res = await fetch('https://rumah-keripik.vercel.app/api/mobile/auth/login', {
+    const res = await fetch(`${getApiBase()}/api/mobile/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, register: true, name, pin }),

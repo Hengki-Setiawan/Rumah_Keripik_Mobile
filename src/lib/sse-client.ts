@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const BASE_URL = 'https://rumah-keripik.vercel.app';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://rumah-keripik.vercel.app';
 const COOKIE_KEY = 'rk_session_cookie';
 const MAX_RETRIES = 5;
 const RETRY_BASE_DELAY = 2000;
