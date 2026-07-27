@@ -1,0 +1,16 @@
+appId: com.hengkisetiawan.rumahkeripik
+---
+- launchApp
+- assertVisible: "AI Agent"
+- assertVisible: "Katalog"
+- assertVisible: "Pesananku"
+- assertVisible: "Profil"
+
+- tapOn: "Katalog"
+- assertVisible: "Cari keripik favoritmu"
+
+- tapOn: "Pesananku"
+- assertVisible: "Pelacakan Pesanan Real-Time"
+
+- tapOn: "Profil"
+- assertVisible: "Profil Pelanggan"

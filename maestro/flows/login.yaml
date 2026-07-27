@@ -1,0 +1,14 @@
+appId: com.hengkisetiawan.rumahkeripik
+---
+- launchApp
+- assertVisible: "Rumah Keripik"
+- assertVisible: "Masuk ke akun Anda"
+- assertVisible: "Masuk"
+- assertVisible: "Belum punya akun? Daftar"
+
+- tapOn: "Belum punya akun? Daftar"
+- assertVisible: "Nama lengkap"
+- assertVisible: "Buat akun baru"
+
+- tapOn: "Daftar"
+- assertVisible: "Nomor HP tidak valid"

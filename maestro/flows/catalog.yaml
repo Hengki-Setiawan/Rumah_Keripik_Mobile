@@ -1,0 +1,5 @@
+appId: com.hengkisetiawan.rumahkeripik
+---
+- launchApp
+- tapOn: "Katalog"
+- assertVisible: "Beli Pack"
